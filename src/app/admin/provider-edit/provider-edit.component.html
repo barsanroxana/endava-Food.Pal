@@ -23,7 +23,7 @@
           </mat-form-field>
         </div>
       </div>
-      <div class="column lg" formGroupName="providerCatalogue">
+      <div class="column lg" formGroupName="catalogue" >
         <div class="row">
           <mat-form-field appearance="outline" color="accent" class="fill">
             <mat-label>Description</mat-label>
@@ -34,14 +34,18 @@
             ></textarea>
           </mat-form-field>
         </div>
+        <div class="row actions">
+          <button mat-raised-button color="accent" (click)="addNewItem()">New Item</button>
+        </div>
         <div class="row" style="height: 500px">
           <h3>Menu Items</h3>
           <div class="container">
             <div
-              *ngFor="let control of catalogItems.controls"
+              *ngFor="let control of catalogItems.controls; index as i"
               class="menu-item row"
+
             >
-              <div class="menu-item-name column">
+              <div class="menu-item-name column" *ngIf="control.get('status').value !== statusDeleted">
                 <mat-form-field
                   appearance="outline"
                   color="accent"
@@ -55,7 +59,7 @@
                   />
                 </mat-form-field>
               </div>
-              <div class="menu-item-name column">
+              <div class="menu-item-name column" *ngIf="control.get('status').value !== statusDeleted">
                 <mat-form-field
                   appearance="outline"
                   color="accent"
@@ -72,6 +76,9 @@
                     [formControl]="control.get('price')"
                   />
                 </mat-form-field>
+              </div>
+              <div class="menu-item-name column" *ngIf="control.get('status').value !== statusDeleted">
+                <button mat-raised-button color="accent" (click)="delete(control)">Delete</button>
               </div>
             </div>
           </div>

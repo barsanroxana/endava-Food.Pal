@@ -38,8 +38,9 @@ export class ProvidersService {
           this.http.put(`${menuUrl}/${menuItem.id}`, menuItem)
         );
       });
+
     data.catalogue.items
-      .filter((f) => f.status === ItemStatus.Deleted)
+      .filter((f) => f.status === ItemStatus.Deleted && f.id)
       ?.forEach((menuItem) => {
         menuItemRequests.push(this.http.delete(`${menuUrl}/${menuItem.id}`));
       });

@@ -7,9 +7,11 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Provider } from '../models/provider';
+import { ItemStatus } from '../models/provider-catalogue';
 import { ProvidersService } from '../services/providers.service';
 
 @Component({
@@ -20,10 +22,13 @@ import { ProvidersService } from '../services/providers.service';
 export class ProviderEditComponent implements OnInit {
   data$: Observable<Provider>;
 
+  statusDeleted: ItemStatus = ItemStatus.Deleted;
+
   formGroup: FormGroup;
   nameFormControl: FormControl;
 
   catalogItems: FormArray;
+  providerId: number;
 
   get nameErrors() {
     return !!this.nameFormControl.errors
@@ -33,12 +38,17 @@ export class ProviderEditComponent implements OnInit {
 
   constructor(
     private providerSvc: ProvidersService,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
     this.initForm();
-    this.data$ = this.providerSvc.getProvider(1).pipe(
+    this.route.paramMap.subscribe(params => {
+      this.providerId = parseInt(params.get('providerId'));
+    });
+
+    this.data$ = this.providerSvc.getProvider(this.providerId).pipe(
       tap((data) => {
         this.fillForm(data);
       })
@@ -55,13 +65,12 @@ export class ProviderEditComponent implements OnInit {
     );
 
     this.catalogItems = new FormArray([]);
-
     this.formGroup = this.formBuilder.group({
       id: new FormControl(),
       name: this.nameFormControl,
       description: new FormControl(),
       location: new FormControl(),
-      providerCatalogue: new FormGroup({
+      catalogue: new FormGroup({
         id: new FormControl(),
         description: new FormControl(),
         items: this.catalogItems,
@@ -75,17 +84,21 @@ export class ProviderEditComponent implements OnInit {
     this.formGroup.get('description').setValue(data.description);
     this.formGroup.get('location').setValue(data.location);
     this.formGroup
-      .get('providerCatalogue.description')
+      .get('catalogue.description')
       .setValue(data.catalogue.description);
-    this.formGroup.get('providerCatalogue.id').setValue(data.catalogue.id);
+    this.formGroup.get('catalogue.id').setValue(data.catalogue.id);
     data.catalogue?.items?.forEach((item) => {
-      (this.formGroup.get('providerCatalogue.items') as FormArray).push(
+      (this.formGroup.get('catalogue.items') as FormArray).push(
         new FormGroup({
           id: new FormControl(item.id),
           name: new FormControl(item.name),
           price: new FormControl(item.price),
+          status: new FormControl(ItemStatus.Initial),
         })
       );
+    });
+    this.formGroup.get('catalogue.items').valueChanges.subscribe((value) => {
+      console.log(value);
     });
   }
 
@@ -93,9 +106,26 @@ export class ProviderEditComponent implements OnInit {
     if (this.formGroup.valid) {
       const form = this.formGroup.value;
       console.log('new name: ', form);
+      this.providerSvc.updateProvider(this.formGroup.get('id').value,form);
     } else {
       this.getFormValidationErrors();
     }
+  }
+
+  addNewItem() {
+    (this.formGroup.get('catalogue.items') as FormArray).push(
+      new FormGroup({
+        id: new FormControl(),
+        name: new FormControl(),
+        price: new FormControl(),
+        status: new FormControl(ItemStatus.Added),
+      })
+    );
+  }
+
+  delete(indexForm: FormGroup)
+  {
+    indexForm.get('status').setValue(this.statusDeleted);
   }
 
   getFormValidationErrors() {
